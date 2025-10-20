@@ -120,7 +120,7 @@
           "&state=" + encodeURIComponent(lineId);
 
         // ส่งผู้ใช้ไปหน้าอนุญาตของ Notion
-        window.location.href = oauthUrl;
+        liff.openWindow({ url: oauthUrl, external: true });
       } catch (err) {
         alert("ไม่สามารถเริ่มการเชื่อมต่อได้\n" + (err?.message || err));
         console.error(err);
