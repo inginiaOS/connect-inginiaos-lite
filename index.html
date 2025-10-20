@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>inginiaOS LITE – Connect Notion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --brand:#111827;          /* almost-black */
+      --accent:#10B981;         /* green (trust) */
+      --bg:#F8FAFC;             /* soft background */
+      --card:#FFFFFF;
+      --muted:#6B7280;          /* gray-500 */
+      --ring:#E5E7EB;           /* gray-200 */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#F8FAFC 0%, #EEF2F7 100%);
+      color:var(--brand);
+    }
+    .wrap{
+      min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:28px;
+    }
+    .card{
+      width:100%; max-width:540px; background:var(--card);
+      border:1px solid var(--ring); border-radius:16px; padding:28px;
+      box-shadow:0 10px 30px rgba(17,24,39,.06);
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; margin-bottom:18px;
+    }
+    .logo{
+      width:44px; height:44px; border-radius:10px; background:var(--brand); display:grid; place-items:center; color:#fff; font-weight:700;
+      letter-spacing:.5px;
+    }
+    .title{ font-size:22px; font-weight:700; }
+    .subtitle{ color:var(--muted); margin:6px 0 18px }
+    .badge{
+      display:inline-block; background:#ECFDF5; color:#064E3B; border:1px solid #D1FAE5;
+      padding:6px 10px; border-radius:999px; font-size:12px; font-weight:600; margin-bottom:12px;
+    }
+    .btn{
+      width:100%; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      appearance:none; border:0; border-radius:12px; padding:14px 18px; font-weight:700;
+      background:var(--accent); color:#fff; cursor:pointer; transition:transform .05s ease, filter .2s ease;
+      box-shadow:0 8px 20px rgba(16,185,129,.25);
+    }
+    .btn:hover{ filter:brightness(1.05) }
+    .btn:active{ transform:translateY(1px) }
+    .hint{ color:var(--muted); font-size:13px; margin-top:10px }
+    .trust{
+      display:flex; gap:16px; align-items:center; margin-top:18px; color:var(--muted); font-size:13px;
+    }
+    .dot{ width:6px; height:6px; background:#10B981; border-radius:50% }
+    .footer{ margin-top:22px; font-size:12px; color:var(--muted) }
+    .sep{ height:1px; background:var(--ring); margin:18px 0 }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="brand">
+        <div class="logo">iL</div>
+        <div>
+          <div class="title">inginiaOS LITE</div>
+          <div class="subtitle">เชื่อมต่อบอทกับ Notion ของคุณให้พร้อมใช้งาน</div>
+        </div>
+      </div>
+
+      <span class="badge">ขั้นตอนเดียว · ปลอดภัยด้วย OAuth</span>
+
+      <button class="btn" id="connectBtn">🔗 เชื่อมต่อ Notion</button>
+      <div class="hint">กดแล้วระบบจะยืนยันตัวตนผ่าน LINE และไปหน้าอนุญาตของ Notion</div>
+
+      <div class="sep"></div>
+
+      <div class="trust">
+        <div class="dot"></div><div>ใช้สิทธิ์เท่าที่จำเป็น (Least privilege)</div>
+        <div class="dot"></div><div>ยกเลิกได้ทุกเมื่อใน Notion → Settings → Connections</div>
+      </div>
+
+      <div class="footer">© inginiaOS LITE</div>
+    </div>
+  </div>
+
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    // ======= TODO: แก้ไขค่า 3 จุดนี้ =======
+    const LIFF_ID = "YOUR_LIFF_ID";
+    const NOTION_CLIENT_ID = "YOUR_NOTION_CLIENT_ID";
+    const REDIRECT_URI = "YOUR_REDIRECT_URI"; // ตัวเต็ม เช่น https://hook.eu2.make.com/ct4w4k...
+    // =======================================
+
+    async function getLineUserId() {
+      await liff.init({ liffId: LIFF_ID });
+
+      // รองรับทั้ง Mobile (in-app) และ PC (ให้ login LINE Web ก่อน)
+      if (!liff.isInClient() && !liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.href });
+        return null; // จะกลับเข้าหน้านี้ใหม่หลัง login
+      }
+      const profile = await liff.getProfile();
+      return profile.userId; // เช่น "Uxxxxxxxxxxxxxxxxxxxx"
+    }
+
+    async function connectNotion() {
+      try {
+        const lineId = await getLineUserId();
+        if (!lineId) return;
+
+        const oauthUrl =
+          "https://api.notion.com/v1/oauth/authorize" +
+          "?client_id=" + encodeURIComponent(NOTION_CLIENT_ID) +
+          "&response_type=code" +
+          "&owner=user" +
+          "&redirect_uri=" + encodeURIComponent(REDIRECT_URI) +
+          "&state=" + encodeURIComponent(lineId);
+
+        // ส่งผู้ใช้ไปหน้าอนุญาตของ Notion
+        window.location.href = oauthUrl;
+      } catch (err) {
+        alert("ไม่สามารถเริ่มการเชื่อมต่อได้\n" + (err?.message || err));
+        console.error(err);
+      }
+    }
+
+    document.getElementById("connectBtn").addEventListener("click", connectNotion);
+  </script>
+</body>
+</html>
